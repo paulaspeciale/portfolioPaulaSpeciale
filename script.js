@@ -43,9 +43,8 @@
   });
 })();
 (function () {
-  var BLOG_ID = "8119254594228731307";
-  var API_KEY = "AIzaSyCaUOuAYEzvDqN-Ss6EibClNxVHRULhJt0";
-  var base = "https://www.googleapis.com/blogger/v3/blogs/" + BLOG_ID;
+  var BLOG_URL = "https://bibliotecariadelvillano.blogspot.com";
+  var feedUrl = BLOG_URL + "/feeds/posts/default?alt=json&max-results=3";
 
   var status = document.getElementById("blog-status");
   var list = document.getElementById("blog-list");
@@ -53,16 +52,13 @@
   var more = document.getElementById("blog-more");
   if (!status || !list) return;
 
-  Promise.all([
-    fetch(base + "?key=" + API_KEY).then(function (r) { return r.json(); }),
-    fetch(base + "/posts?key=" + API_KEY + "&maxResults=3&fetchBodies=false")
-      .then(function (r) { return r.json(); })
-  ])
-    .then(function (res) {
-      var blog = res[0];
-      var posts = res[1].items || [];
+  fetch(feedUrl)
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      var feed = data.feed;
+      var posts = feed.entry || [];
 
-      count.textContent = "(" + blog.posts.totalItems + ")";
+      count.textContent = "(" + feed.openSearch$totalResults.$t + ")";
 
       if (!posts.length) {
         status.textContent = "Próximamente reseñas de libros.";
@@ -71,17 +67,20 @@
 
       status.textContent = "Últimas reseñas:";
       posts.forEach(function (p) {
+        var enlace = p.link.find(function (l) { return l.rel === "alternate"; });
+        if (!enlace) return;
+
         var li = document.createElement("li");
         var a = document.createElement("a");
-        a.href = p.url;
-        a.textContent = p.title;
+        a.href = enlace.href;
+        a.textContent = p.title.$t;
         a.target = "_blank";
         a.rel = "noopener";
         li.appendChild(a);
         list.appendChild(li);
       });
 
-      more.href = blog.url;
+      more.href = BLOG_URL;
       more.hidden = false;
     })
     .catch(function () {
